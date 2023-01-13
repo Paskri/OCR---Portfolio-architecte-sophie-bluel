@@ -1,3 +1,5 @@
+import { displayThumbnails, displayWorks, getWorks } from "./functions.js";
+
 // modal windows display
 //définition des variables
 let modal = null
@@ -88,57 +90,72 @@ document.querySelector('.js-modal-back').addEventListener('click', function(e) {
 // Displaying downloaded image thumbnail
 let img = "";
 let previousContent = document.querySelector(".upload-container").innerHTML
-let imageInput = document.getElementById("image-input")
+let imageInput = document.getElementById("file")
 
+/**
+ * Reset file input by displaying prévious content
+ */
 const displayImageInput = function () {
-    const imgThumb = document.querySelector(".image-thumbnail")
-    console.log(imgThumb)
-    imgThumb.addEventListener('click', function(){
+    const imgPreview = document.querySelector(".upload-container img")
     document.querySelector(".upload-container").innerHTML = previousContent
     // Reappearing elements
-    imageInput = document.getElementById("image-input")
-    imageInput.addEventListener("change", displayThumbnail)
-})
+    imageInput = document.getElementById("file")
+    imageInput.addEventListener("change", displayPreview)
 }
 
-const displayThumbnail = function () {
-        img = imageInput.files[0]
-        const imagethumbnail = 
-        `<div class="image-thumbnail">
-            <img src="${URL.createObjectURL(img)}" alt="image">
-        </div>`
-        document.querySelector(".upload-container").innerHTML = imagethumbnail
-        const imgThumb = document.querySelector('.image-thumbnail img')
-        imgThumb.addEventListener("click", displayImageInput)
+/**
+ * Displaying image preview and hidding download components
+ */
+const displayPreview = function () {
+        //updating image
+        const preview = document.querySelector(".upload-container img")
+        preview.setAttribute("src", URL.createObjectURL(imageInput.files[0]))
+        preview.classList.add("preview")
+        //updating download items
+        const upCont = document.querySelector(".upload-container")
+        upCont.querySelector("p").setAttribute("hidden", "")
+        upCont.querySelector("label").setAttribute("style", "display: none;")
+        upCont.querySelector("img").addEventListener("click", displayImageInput)
 }
 
 // Entry point in functions loop above
-imageInput.addEventListener("change", displayThumbnail)
+imageInput.addEventListener("change", displayPreview)
 
 //add picture / processing form datas
 const addPicture = document.querySelector("#add-picture form")
-addPicture.addEventListener("submit", async function(e){
+addPicture.addEventListener("submit", function(e){
     e.preventDefault()
     console.log(e.target)
     //Maybe try to get form datas directly from HTMLform via input names
     let datas = new FormData(addPicture)
-    /*datas.append('file', imageInput.files[0])
-    datas.append('title', e.target.querySelector("[name=title]").value)
-    datas.append('categoryId', e.target.querySelector("[name=category]").value)*/
     console.log(datas)
+   
     const bearerAuth = JSON.parse(window.localStorage.getItem("bearerAuth"))
-    const request = await fetch("http://localhost:5678/api/works", {
-            Method: "POST",
-            Headers: {
-                "Accept": "application/json",
-                "Content-type": "application/json",
-                "Authorization": bearerAuth.userId + ' ' + bearerAuth.token
+    console.log(bearerAuth.token)
+    fetch("http://localhost:5678/api/works", {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer "+bearerAuth.token               
             },
-            "Body": datas
+            body: datas            
         })
-    console.log(request)
-    const response = await request.json()
-    console.log(response)
+        .then((response) => {
+            console.log(response)
+            return response.json()
+        })
+        .then((result) => {
+            console.log('Success:', result);
+            getWorks()
+            closeModal("#modal3-2")
+            openModal("#modal3-1")
+            addPicture.reset()
+            displayImageInput()
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    //updating works
+    
     //renvoie l'ensemble des works
 })
 
